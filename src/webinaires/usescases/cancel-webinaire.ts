@@ -1,34 +1,29 @@
-import { Executable } from "../../shared/executable";
-import { User } from "../../users/entities/user.entity";
+import { Executable } from "src/shared/executable";
+import { User } from "src/users/entities/user.entity";
 import { IWebinaireRepository } from "../ports/webinaire-repository.interface";
-import { IDateGenerator } from "../../core/ports/fixed-date-generator.interface";
-import { IParticipationRepository } from "../ports/participation-repository.interface";
-import { IMailer } from "../../core/ports/mailer.interface";
-import { IUserRepository } from "../../users/ports/user-repository.interface";
-import { Webinaire } from "../entities/webinaire.entity";
 import { WebinaireNotFoundException } from "../exceptions/webinaire-not-found";
 import { WebinaireUpdateForbiddenException } from "../exceptions/webinaire-update-forbidden";
-import { WebinaireTooEarlyException } from "../exceptions/webinaire-too-early";
+import { IMailer } from "src/core/ports/mailer.interface";
+import { IParticipationRepository } from "../ports/participation-repository.interface";
+import { IUserRepository } from "src/users/ports/user-repository.interface";
+import { Webinaire } from "../entities/webinaire.entity";
 
 type Request = {
   user: User;
   webinaireId: string;
-  startDate: Date;
-  endDate: Date;
 };
 
 type Response = void;
 
-export class ChangeDates implements Executable<Request, Response> {
+export class CancelWebinaire implements Executable<Request, Response> {
   constructor(
     private readonly repository: IWebinaireRepository,
-    private readonly dateGenerator: IDateGenerator,
-    private readonly participationRepository: IParticipationRepository,
     private readonly usersRepository: IUserRepository,
+    private readonly participationRepository: IParticipationRepository,
     private readonly mailer: IMailer
   ) {}
 
-  async execute(request: Request): Promise<Response> {
+  async execute(request: Request): Promise<void> {
     const webinaire = await this.repository.findById(request.webinaireId);
 
     if (!webinaire) {
@@ -39,16 +34,8 @@ export class ChangeDates implements Executable<Request, Response> {
       throw new WebinaireUpdateForbiddenException();
     }
 
-    webinaire.update({
-      startDate: request.startDate,
-      endDate: request.endDate,
-    });
+    await this.repository.delete(webinaire);
 
-    if (webinaire.itTooClose(this.dateGenerator.now())) {
-      throw new WebinaireTooEarlyException();
-    }
-
-    await this.repository.update(webinaire);
     await this.sendEmailToParticipants(webinaire);
   }
 
@@ -67,8 +54,8 @@ export class ChangeDates implements Executable<Request, Response> {
       users.map((user) =>
         this.mailer.send({
           to: user.props.emailAddress,
-          subject: "Test",
-          body: "Test",
+          subject: "Webinaire Cancelled",
+          body: "Test Webinaire deletion",
         })
       )
     );

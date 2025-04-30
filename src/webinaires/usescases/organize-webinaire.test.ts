@@ -60,7 +60,7 @@ describe('Fonctionnalité: Organiser un webinaire', () => {
     };
     it('Devrait retourner une erreur', async () => {
       await expect(async () => useCase.execute(payload)).rejects.toThrow(
-        'Le webinaire doit être organiser 03 jours avant la date de début',
+        'The webinaire must happen in at least 3 days',
       );
     });
     it('Devrait ne pas créer un webinaire', async () => {
@@ -83,7 +83,7 @@ describe('Fonctionnalité: Organiser un webinaire', () => {
     };
     it('Devrait retourner une erreur', async () => {
       await expect(async () => useCase.execute(payload)).rejects.toThrow(
-        'La capacité du webinaire est de 1000 places',
+        'The webinaire must have a maximum of 1000 seats',
       );
     });
     it('Devrait ne pas créer un webinaire', async () => {

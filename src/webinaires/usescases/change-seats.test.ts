@@ -47,7 +47,7 @@ describe('Features: Changing number of seats', () => {
     };
     it('Should fail', async () => {
       await expect(useCase.execute(payload)).rejects.toThrow(
-        'webinaire not found',
+        'Webinaire not found',
       );
       expectSeatsToRemainUnchanged(50);
     });

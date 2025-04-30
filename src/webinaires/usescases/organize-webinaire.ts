@@ -1,9 +1,12 @@
-import { User } from '../../users/entities/user.entity';
-import { Webinaire } from '../entities/webinaire.entity';
-import { IDateGenerator } from '../../core/ports/fixed-date-generator.interface';
-import { IIDGenerator } from '../../core/ports/fixed-id-generator.interface';
-import { IWebinaireRepository } from '../ports/webinaire-repository.interface';
-import { Executable } from '../../shared/executable';
+import { User } from "../../users/entities/user.entity";
+import { Webinaire } from "../entities/webinaire.entity";
+import { IDateGenerator } from "../../core/ports/fixed-date-generator.interface";
+import { IIDGenerator } from "../../core/ports/fixed-id-generator.interface";
+import { IWebinaireRepository } from "../ports/webinaire-repository.interface";
+import { Executable } from "../../shared/executable";
+import { WebinaireNoSeatsException } from "../exceptions/webinaire-no-seats";
+import { WebinaireTooManySeatsException } from "../exceptions/webinaire-too-many-seats";
+import { WebinaireTooEarlyException } from "../exceptions/webinaire-too-early";
 
 type Request = {
   user: User;
@@ -19,7 +22,7 @@ export class OrganizerWebinaire implements Executable<Request, Response> {
   constructor(
     private readonly repository: IWebinaireRepository,
     private readonly idGenerator: IIDGenerator,
-    private readonly dateGenerator: IDateGenerator,
+    private readonly dateGenerator: IDateGenerator
   ) {}
 
   async execute(data: Request) {
@@ -34,19 +37,15 @@ export class OrganizerWebinaire implements Executable<Request, Response> {
     });
 
     if (webinaire.itTooClose(this.dateGenerator.now())) {
-      throw new Error(
-        'Le webinaire doit être organiser 03 jours avant la date de début',
-      );
+      throw new WebinaireTooEarlyException();
     }
 
     if (webinaire.hasTooManySeats()) {
-      throw new Error('La capacité du webinaire est de 1000 places');
+      throw new WebinaireTooManySeatsException();
     }
 
     if (webinaire.hasNoSeats()) {
-      throw new Error(
-        'Le nombre de place au webinaire soit être de minimum 1 place',
-      );
+      throw new WebinaireNoSeatsException();
     }
 
     this.repository.createWebinaire(webinaire);
